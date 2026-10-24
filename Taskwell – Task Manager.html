@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taskwell – Daily Task Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9eef5;--surface:#fff;--ink:#17202e;--muted:#5d6b80;--line:#d5dce7;
+  --accent:#2a4fd6;--accent-ink:#fff;--ok:#1d7a4d;--danger:#c2312d;
+  --hi:#c2312d;--med:#b86e00;--low:#2a7f8f;
+  box-sizing:border-box;color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1520;--surface:#18202e;--ink:#e8edf6;--muted:#9aa8bd;--line:#2a3548;
+    --accent:#7d9bff;--accent-ink:#0f1520;--ok:#5fd09a;--danger:#ff7b76;
+    --hi:#ff7b76;--med:#f0b04a;--low:#6cc6d6;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1520;--surface:#18202e;--ink:#e8edf6;--muted:#9aa8bd;--line:#2a3548;
+  --accent:#7d9bff;--accent-ink:#0f1520;--ok:#5fd09a;--danger:#ff7b76;
+  --hi:#ff7b76;--med:#f0b04a;--low:#6cc6d6;color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 56px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+h1{font-size:clamp(2rem,6vw,3rem);font-weight:800;letter-spacing:-.03em;margin:0;line-height:1}
+.sub{color:var(--muted);margin:6px 0 0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.icon-btn{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-size:1.9rem;line-height:1.1;font-weight:800}
+.stat span{color:var(--muted);font-size:.9rem}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:20px}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.panel h2{font-size:1.1rem;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px}
+input[aria-invalid="true"]{border-color:var(--danger)}
+.err{color:var(--danger);font-size:.88rem;min-height:1.3em;margin:6px 0 0}
+.actions{display:flex;gap:8px;margin-top:8px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:10px 18px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.tools{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+li.task{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--low);border-radius:12px;padding:12px 14px}
+li.task.p-high{border-left-color:var(--hi)}li.task.p-medium{border-left-color:var(--med)}
+li.task input[type=checkbox]{width:22px;height:22px;min-height:0;margin-top:3px;accent-color:var(--accent);flex:none}
+.body{flex:1;min-width:0}
+.title{font-weight:600;overflow-wrap:anywhere}
+.done .title{text-decoration:line-through;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:.82rem;color:var(--muted)}
+.tag{border:1px solid var(--line);border-radius:99px;padding:1px 10px}
+.tag.late{color:var(--danger);border-color:var(--danger)}
+.row-btns{display:flex;gap:6px;flex:none}
+.row-btns button{background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:36px}
+.row-btns .del{color:var(--danger)}
+.empty{text-align:center;color:var(--muted);padding:32px 12px;border:2px dashed var(--line);border-radius:12px}
+@media (max-width:720px){
+  .grid,.tools{grid-template-columns:1fr 1fr}
+  .grid>:first-child,.tools>:first-child{grid-column:1/-1}
+  li.task{flex-wrap:wrap}.row-btns{width:100%;justify-content:flex-end}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Taskwell</h1><p class="sub" id="today"></p></div>
+    <button class="icon-btn" id="theme" type="button" aria-label="Toggle dark mode">Dark mode</button>
+  </header>
+
+  <section class="stats" aria-label="Task summary">
+    <div class="stat"><b id="sTotal">0</b><span>Total</span></div>
+    <div class="stat"><b id="sDone">0</b><span>Completed</span></div>
+    <div class="stat"><b id="sPend">0</b><span>Pending</span></div>
+  </section>
+  <div class="bar" role="progressbar" aria-label="Completion" aria-valuemin="0" aria-valuemax="100"><i id="prog"></i></div>
+
+  <section class="panel">
+    <h2 id="formTitle">Add a task</h2>
+    <form id="form" novalidate>
+      <div class="grid">
+        <div><label for="fTitle">Task</label><input id="fTitle" maxlength="100" placeholder="What needs doing?" autocomplete="off"></div>
+        <div><label for="fCat">Category</label><select id="fCat"></select></div>
+        <div><label for="fPri">Priority</label>
+          <select id="fPri"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+        <div><label for="fDue">Due date</label><input id="fDue" type="date"></div>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="actions">
+        <button class="btn" id="save" type="submit">Add task</button>
+        <button class="btn ghost" id="cancel" type="button" hidden>Cancel edit</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="tools" aria-label="Search and filters">
+    <div><label for="q">Search</label><input id="q" type="search" placeholder="Search tasks"></div>
+    <div><label for="xStatus">Status</label><select id="xStatus"><option value="all">All</option><option value="pending">Pending</option><option value="done">Completed</option></select></div>
+    <div><label for="xCat">Category</label><select id="xCat"></select></div>
+    <div><label for="xPri">Priority</label><select id="xPri"><option value="all">All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+    <div><label for="xSort">Sort by</label><select id="xSort"><option value="created">Newest</option><option value="due">Due date</option><option value="priority">Priority</option></select></div>
+  </section>
+
+  <ul id="list" aria-live="polite"></ul>
+</div>
+
+<script>
+(function(){
+  var KEY="taskwell.tasks.v1",THEME="taskwell.theme";
+  var CATS=["Work","Personal","Study","Health","Other"];
+  var RANK={high:0,medium:1,low:2};
+  var tasks=[],editId=null;
+  var $=function(id){return document.getElementById(id)};
+
+  function load(){try{var r=localStorage.getItem(KEY);var a=r?JSON.parse(r):[];return Array.isArray(a)?a:[]}catch(e){return[]}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(tasks))}catch(e){}}
+  function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+
+  function fillSelects(){
+    CATS.forEach(function(c){
+      $("fCat").appendChild(new Option(c,c));
+    });
+    $("xCat").appendChild(new Option("All","all"));
+    CATS.forEach(function(c){$("xCat").appendChild(new Option(c,c))});
+  }
+
+  function setErr(msg){
+    $("err").textContent=msg;
+    $("fTitle").setAttribute("aria-invalid",msg?"true":"false");
+  }
+
+  function resetForm(){
+    editId=null;$("form").reset();$("fPri").value="medium";setErr("");
+    $("formTitle").textContent="Add a task";$("save").textContent="Add task";$("cancel").hidden=true;
+  }
+
+  $("form").addEventListener("submit",function(e){
+    e.preventDefault();
+    var title=$("fTitle").value.trim().replace(/\s+/g," ");
+    var due=$("fDue").value;
+    if(!title){return setErr("Enter a task name to continue.")}
+    if(title.length<3){return setErr("Task names need at least 3 characters.")}
+    var dup=tasks.some(function(t){return t.id!==editId&&!t.done&&t.title.toLowerCase()===title.toLowerCase()});
+    if(dup){return setErr("A pending task with this name already exists.")}
+    var old=editId?tasks.filter(function(t){return t.id===editId})[0]:null;
+    if(due&&due<today()&&(!old||old.due!==due)){return setErr("Pick today or a later date for the due date.")}
+    if(old){
+      old.title=title;old.category=$("fCat").value;old.priority=$("fPri").value;old.due=due;
+    }else{
+      tasks.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:title,
+        category:$("fCat").value,priority:$("fPri").value,due:due,done:false,created:Date.now()});
+    }
+    save();resetForm();render();
+  });
+  $("cancel").addEventListener("click",resetForm);
+
+  ["q","xStatus","xCat","xPri","xSort"].forEach(function(id){
+    $(id).addEventListener(id==="q"?"input":"change",render);
+  });
+
+  function startEdit(t){
+    editId=t.id;$("fTitle").value=t.title;$("fCat").value=t.category;$("fPri").value=t.priority;$("fDue").value=t.due||"";
+    $("formTitle").textContent="Edit task";$("save").textContent="Save changes";$("cancel").hidden=false;setErr("");
+    $("fTitle").focus();window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
+
+  function render(){
+    var done=tasks.filter(function(t){return t.done}).length,total=tasks.length;
+    $("sTotal").textContent=total;$("sDone").textContent=done;$("sPend").textContent=total-done;
+    var pct=total?Math.round(done/total*100):0;
+    $("prog").style.width=pct+"%";$("prog").parentNode.setAttribute("aria-valuenow",pct);
+
+    var q=$("q").value.trim().toLowerCase(),s=$("xStatus").value,c=$("xCat").value,p=$("xPri").value,so=$("xSort").value;
+    var view=tasks.filter(function(t){
+      return (!q||t.title.toLowerCase().indexOf(q)>-1)&&(s==="all"||(s==="done")===t.done)&&
+        (c==="all"||t.category===c)&&(p==="all"||t.priority===p);
+    });
+    view.sort(function(a,b){
+      if(so==="due"){return (a.due||"9999").localeCompare(b.due||"9999")}
+      if(so==="priority"){return RANK[a.priority]-RANK[b.priority]}
+      return b.created-a.created;
+    });
+
+    var ul=$("list");ul.textContent="";
+    if(!view.length){
+      ul.appendChild(el("li","empty",total?"No tasks match these filters. Try clearing the search or filters.":"No tasks yet. Add your first task above to get started."));
+      return;
+    }
+    view.forEach(function(t){
+      var li=el("li","task p-"+t.priority+(t.done?" done":""));
+      var cb=document.createElement("input");cb.type="checkbox";cb.checked=t.done;
+      cb.setAttribute("aria-label","Mark “"+t.title+"” as "+(t.done?"pending":"completed"));
+      cb.addEventListener("change",function(){t.done=cb.checked;save();render()});
+      var body=el("div","body");body.appendChild(el("div","title",t.title));
+      var meta=el("div","meta");
+      meta.appendChild(el("span","tag",t.category));
+      meta.appendChild(el("span","tag",t.priority.charAt(0).toUpperCase()+t.priority.slice(1)+" priority"));
+      if(t.due){
+        var late=!t.done&&t.due<today();
+        meta.appendChild(el("span","tag"+(late?" late":""),(late?"Overdue: ":"Due ")+new Date(t.due+"T00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})));
+      }
+      body.appendChild(meta);
+      var btns=el("div","row-btns");
+      var ed=el("button",null,"Edit");ed.type="button";ed.addEventListener("click",function(){startEdit(t)});
+      var dl=el("button","del","Delete");dl.type="button";
+      dl.addEventListener("click",function(){
+        if(!confirm("Delete “"+t.title+"”?"))return;
+        tasks=tasks.filter(function(x){return x.id!==t.id});if(editId===t.id)resetForm();save();render();
+      });
+      btns.appendChild(ed);btns.appendChild(dl);
+      li.appendChild(cb);li.appendChild(body);li.appendChild(btns);ul.appendChild(li);
+    });
+  }
+
+  function applyTheme(t){
+    if(t)document.documentElement.setAttribute("data-theme",t);
+    var dark=document.documentElement.getAttribute("data-theme")==="dark"||
+      (!t&&!document.documentElement.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme:dark)").matches);
+    $("theme").textContent=dark?"Light mode":"Dark mode";
+  }
+  $("theme").addEventListener("click",function(){
+    var dark=$("theme").textContent==="Light mode";
+    var next=dark?"light":"dark";applyTheme(next);
+    try{localStorage.setItem(THEME,next)}catch(e){}
+  });
+
+  $("today").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+  $("fDue").min=today();
+  fillSelects();tasks=load();
+  var th=null;try{th=localStorage.getItem(THEME)}catch(e){}
+  applyTheme(th);render();
+})();
+</script>
+</body>
+</html>
